@@ -24,6 +24,11 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { config } from "@/config";
+
+// ============================================
+// Types
+// ============================================
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -40,7 +45,25 @@ const useTypedStream = useStream<
 >;
 
 type StreamContextType = ReturnType<typeof useTypedStream>;
+
+// ============================================
+// Context & Hook
+// ============================================
+
 const StreamContext = createContext<StreamContextType | undefined>(undefined);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useStreamContext = (): StreamContextType => {
+  const context = useContext(StreamContext);
+  if (context === undefined) {
+    throw new Error("useStreamContext must be used within a StreamProvider");
+  }
+  return context;
+};
+
+// ============================================
+// Helper Functions
+// ============================================
 
 async function sleep(ms = 4000) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -65,6 +88,10 @@ async function checkGraphStatus(
     return false;
   }
 }
+
+// ============================================
+// StreamSession Component
+// ============================================
 
 const StreamSession = ({
   children,
@@ -95,8 +122,6 @@ const StreamSession = ({
     },
     onThreadId: (id) => {
       setThreadId(id);
-      // Refetch threads list when thread ID changes.
-      // Wait for some seconds before fetching so we're able to get the new thread that was created.
       sleep().then(() => getThreads().then(setThreads).catch(console.error));
     },
   });
@@ -126,27 +151,23 @@ const StreamSession = ({
   );
 };
 
-// Default values for the form
-const DEFAULT_API_URL = "http://localhost:2024";
-const DEFAULT_ASSISTANT_ID = "agent";
+// ============================================
+// StreamProvider Component
+// ============================================
 
 export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  // Get environment variables
-  const envApiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL;
-  const envAssistantId: string | undefined =
-    process.env.NEXT_PUBLIC_ASSISTANT_ID;
+  const envApiUrl = config.api.baseUrl;
+  const envAssistantId = config.api.assistantId;
 
-  // Use URL params with env var fallbacks
   const [apiUrl, setApiUrl] = useQueryState("apiUrl", {
-    defaultValue: envApiUrl || "",
+    defaultValue: envApiUrl,
   });
   const [assistantId, setAssistantId] = useQueryState("assistantId", {
-    defaultValue: envAssistantId || "",
+    defaultValue: envAssistantId,
   });
 
-  // For API key, use localStorage with env var fallback
   const [apiKey, _setApiKey] = useState(() => {
     const storedKey = getApiKey();
     return storedKey || "";
@@ -157,11 +178,9 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
     _setApiKey(key);
   };
 
-  // Determine final values to use, prioritizing URL params then env vars
   const finalApiUrl = apiUrl || envApiUrl;
   const finalAssistantId = assistantId || envAssistantId;
 
-  // Show the form if we: don't have an API URL, or don't have an assistant ID
   if (!finalApiUrl || !finalAssistantId) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center p-4">
@@ -208,7 +227,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
                 id="apiUrl"
                 name="apiUrl"
                 className="bg-background"
-                defaultValue={apiUrl || DEFAULT_API_URL}
+                defaultValue={apiUrl || config.api.baseUrl}
                 required
               />
             </div>
@@ -226,7 +245,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
                 id="assistantId"
                 name="assistantId"
                 className="bg-background"
-                defaultValue={assistantId || DEFAULT_ASSISTANT_ID}
+                defaultValue={assistantId || config.api.assistantId}
                 required
               />
             </div>
@@ -273,14 +292,3 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
     </StreamSession>
   );
 };
-
-// Create a custom hook to use the context
-export const useStreamContext = (): StreamContextType => {
-  const context = useContext(StreamContext);
-  if (context === undefined) {
-    throw new Error("useStreamContext must be used within a StreamProvider");
-  }
-  return context;
-};
-
-export default StreamContext;

@@ -3,6 +3,8 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Sidebar, Header } from "../components/layout";
+import { Providers } from "../providers/QueryProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Agent Chat",
-  description: "Agent Chat UX by LangChain",
+  title: "Hacker AI Console",
+  description: "Bug Bounty Operation Center",
 };
 
 export default function RootLayout({
@@ -22,8 +24,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <NuqsAdapter>{children}</NuqsAdapter>
+      <body className={`${inter.className} bg-[#0d1117] text-[#c9d1d9]`}>
+        <Providers>
+          <NuqsAdapter>
+            <div className="flex h-screen">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-auto p-6">
+                  {children}
+                </main>
+              </div>
+            </div>
+          </NuqsAdapter>
+        </Providers>
       </body>
     </html>
   );

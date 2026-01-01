@@ -1,7 +1,3 @@
-import { validate } from "uuid";
-import { getApiKey } from "@/lib/api-key";
-import { Thread } from "@langchain/langgraph-sdk";
-import { useQueryState } from "nuqs";
 import {
   createContext,
   useContext,
@@ -11,7 +7,15 @@ import {
   Dispatch,
   SetStateAction,
 } from "react";
+import { validate } from "uuid";
+import { getApiKey } from "@/lib/api-key";
+import { Thread } from "@langchain/langgraph-sdk";
+import { useQueryState } from "nuqs";
 import { createClient } from "./client";
+
+// ============================================
+// Types
+// ============================================
 
 interface ThreadContextType {
   getThreads: () => Promise<Thread[]>;
@@ -21,7 +25,24 @@ interface ThreadContextType {
   setThreadsLoading: Dispatch<SetStateAction<boolean>>;
 }
 
+// ============================================
+// Context & Hook
+// ============================================
+
 const ThreadContext = createContext<ThreadContextType | undefined>(undefined);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useThreads() {
+  const context = useContext(ThreadContext);
+  if (context === undefined) {
+    throw new Error("useThreads must be used within a ThreadProvider");
+  }
+  return context;
+}
+
+// ============================================
+// Helper Functions
+// ============================================
 
 function getThreadSearchMetadata(
   assistantId: string,
@@ -32,6 +53,10 @@ function getThreadSearchMetadata(
     return { graph_id: assistantId };
   }
 }
+
+// ============================================
+// ThreadProvider Component
+// ============================================
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
   const [apiUrl] = useQueryState("apiUrl");
@@ -64,12 +89,4 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   return (
     <ThreadContext.Provider value={value}>{children}</ThreadContext.Provider>
   );
-}
-
-export function useThreads() {
-  const context = useContext(ThreadContext);
-  if (context === undefined) {
-    throw new Error("useThreads must be used within a ThreadProvider");
-  }
-  return context;
 }
